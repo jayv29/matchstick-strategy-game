@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小恐龙 PK 小狮子 - 火柴策略游戏</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
+
+        :root {
+            --dino-color: #88d498;
+            --lion-color: #f4a261;
+            --bg-color: #fdfcdc;
+            --match-color: #e76f51;
+            --match-head: #264653;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Fredoka', "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: #2a9d8f;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        /* Setup Screen */
+        #setup-screen {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+
+        label {
+            font-size: 1.2em;
+            color: #555;
+            font-weight: bold;
+        }
+
+        input[type="number"] {
+            padding: 10px;
+            font-size: 1.5em;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            width: 150px;
+            text-align: center;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: #2a9d8f;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 5px 0 #1d7066;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            background: #2ec4b6;
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 0 0 #1d7066;
+        }
+
+        /* Game Screen */
+        #game-screen {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 10px;
+            background: #edf6f9;
+            padding: 15px;
+            border-radius: 15px;
+        }
+
+        .player {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0.5;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .player.active {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .avatar {
+            font-size: 3em;
+            margin-bottom: 5px;
+            background: white;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .score {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .game-status {
+            font-size: 1.5em;
+            color: #555;
+            min-height: 1.5em;
+            font-weight: bold;
+        }
+
+        .match-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            padding: 20px;
+            min-height: 200px;
+            align-content: center;
+            background: #fff8f0;
+            border-radius: 15px;
+            border: 2px dashed #f4a261;
+        }
+
+        .match {
+            width: 12px;
+            height: 80px;
+            background: var(--match-color);
+            border-radius: 5px;
+            position: relative;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            animation: popIn 0.3s ease-out backwards;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+
+        .match::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -2px;
+            width: 16px;
+            height: 18px;
+            background: var(--match-head);
+            border-radius: 8px 8px 4px 4px;
+        }
+
+        .match.taken {
+            transform: scale(0) rotate(180deg);
+            opacity: 0;
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0);
+            }
+
+            to {
+                transform: scale(1);
+            }
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            padding: 0 10px;
+        }
+
+        .action-btn {
+            background: var(--dino-color);
+            color: white;
+            border: none;
+            width: 60px;
+            height: 60px;
+            font-size: 1.5em;
+            border-radius: 15px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #5fb372;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .action-btn:active:not(:disabled) {
+            transform: translateY(2px);
+            box-shadow: 0 0 0 #5fb372;
+        }
+
+        .action-btn:disabled {
+            background: #ccc;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .log {
+            margin-top: 10px;
+            max-height: 120px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            color: #666;
+            text-align: left;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 2px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            animation: slideDown 0.5s ease-out;
+            min-width: 300px;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        #winner-emoji {
+            font-size: 5em;
+            display: block;
+            margin-bottom: 20px;
+        }
+
+        #winner-text {
+            font-size: 2em;
+            color: #2a9d8f;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🦖 火柴策略游戏 🦁</h1>
+
+        <!-- Setup Screen -->
+        <div id="setup-screen">
+            <div class="input-group">
+                <label>🔥 火柴总数 (10-100)</label>
+                <input type="number" id="match-count" value="21" min="10" max="100">
+            </div>
+
+            <div class="input-group">
+                <label>✋ 每次最多拿几根 (1-10)</label>
+                <input type="number" id="max-take" value="4" min="1" max="10">
+            </div>
+
+            <div class="input-group">
+                <label>谁先开始？</label>
+                <div class="radio-group">
+                    <label class="radio-label"><input type="radio" name="first" value="dino" checked> 🦖 小恐龙 (你)</label>
+                    <label class="radio-label"><input type="radio" name="first" value="lion"> 🦁 小狮子 (AI)</label>
+                </div>
+            </div>
+            <button class="btn" onclick="game.start()">小恐龙 PK 小狮子</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen">
+            <div class="scoreboard">
+                <div class="player" id="p-dino">
+                    <div class="avatar">🦖</div>
+                    <div>小恐龙(你)</div>
+                    <div class="score" id="score-dino">0</div>
+                </div>
+                <div class="player" id="p-lion">
+                    <div class="avatar">🦁</div>
+                    <div>小狮子(AI)</div>
+                    <div class="score" id="score-lion">0</div>
+                </div>
+            </div>
+
+            <div class="game-status" id="status-text">祝你好运！</div>
+
+            <div class="match-container" id="board"></div>
+
+            <div class="controls" id="btn-container">
+                <!-- Buttons will be generated via JS -->
+            </div>
+
+            <div class="log" id="game-log"></div>
+
+            <button class="btn" onclick="location.reload()"
+                style="background:#e76f51; font-size: 1rem; padding: 10px 20px; margin-top:10px;">退出 / 重置</button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal" id="game-over-modal">
+        <div class="modal-content">
+            <span id="winner-emoji">🏆</span>
+            <div id="winner-text">你赢了！</div>
+            <button class="btn" onclick="game.reset()">再玩一局</button>
+        </div>
+    </div>
+
+    <script>
+        class MatchGame {
+            constructor() {
+                this.totalMatches = 21;
+                this.currentMatches = 21;
+                this.maxTake = 4;
+                this.turn = 'dino'; // 'dino' or 'lion'
+                this.scores = { dino: 0, lion: 0 };
+                this.isGameOver = false;
+            }
+
+            start() {
+                // Get config
+                let countInput = parseInt(document.getElementById('match-count').value);
+                let maxTakeInput = parseInt(document.getElementById('max-take').value);
+
+                // Validation
+                if (isNaN(countInput) || countInput < 10) countInput = 10;
+                if (countInput > 100) countInput = 100;
+
+                if (isNaN(maxTakeInput) || maxTakeInput < 1) maxTakeInput = 1;
+                if (maxTakeInput > 10) maxTakeInput = 10;
+
+                this.totalMatches = countInput;
+                this.currentMatches = countInput;
+                this.maxTake = maxTakeInput;
+                this.turn = document.querySelector('input[name="first"]:checked').value;
+
+                // Setup Buttons
+                this.generateButtons();
+
+                // UI Switch
+                document.getElementById('setup-screen').style.display = 'none';
+                document.getElementById('game-screen').style.display = 'flex';
+                document.getElementById('game-over-modal').style.display = 'none';
+                document.getElementById('game-log').innerHTML = '';
+
+                this.renderMatches();
+                this.updateUI();
+
+                if (this.turn === 'lion') {
+                    setTimeout(() => this.aiTurn(), 1000);
+                }
+            }
+
+            reset() {
+                this.currentMatches = this.totalMatches;
+                this.isGameOver = false;
+                this.turn = document.querySelector('input[name="first"]:checked').value;
+
+                document.getElementById('game-over-modal').style.display = 'none';
+                document.getElementById('game-log').innerHTML = '';
+                this.renderMatches();
+                this.updateUI();
+
+                if (this.turn === 'lion') {
+                    setTimeout(() => this.aiTurn(), 1000);
+                }
+            }
+
+            generateButtons() {
+                const container = document.getElementById('btn-container');
+                container.innerHTML = '';
+                for (let i = 1; i <= this.maxTake; i++) {
+                    const btn = document.createElement('button');
+                    btn.className = 'action-btn';
+                    btn.textContent = i;
+                    btn.onclick = () => this.playerVerify(i);
+                    container.appendChild(btn);
+                }
+            }
+
+            renderMatches() {
+                const board = document.getElementById('board');
+                board.innerHTML = '';
+                for (let i = 0; i < this.currentMatches; i++) {
+                    const match = document.createElement('div');
+                    match.className = 'match';
+                    match.style.animationDelay = `${i * 0.01}s`; // Faster animation for large numbers
+                    board.appendChild(match);
+                }
+            }
+
+            updateUI() {
+                // Active player highlight
+                document.getElementById('p-dino').classList.toggle('active', this.turn === 'dino');
+                document.getElementById('p-lion').classList.toggle('active', this.turn === 'lion');
+
+                // Buttons state
+                const btns = document.querySelectorAll('.action-btn');
+                btns.forEach((btn, idx) => {
+                    const take = idx + 1;
+                    // Disable if not dino turn OR if take > current matches
+                    btn.disabled = (this.turn !== 'dino') || (take > this.currentMatches);
+                });
+
+                // Status Text
+                const status = document.getElementById('status-text');
+                if (this.turn === 'dino') {
+                    status.textContent = `🦖 轮到你了 (剩余 ${this.currentMatches} 根)`;
+                    status.style.color = '#2a9d8f';
+                } else {
+                    status.textContent = `🦁 小狮子思考中... (剩余 ${this.currentMatches} 根)`;
+                    status.style.color = '#f4a261';
+                }
+
+                // Scores
+                document.getElementById('score-dino').textContent = this.scores.dino;
+                document.getElementById('score-lion').textContent = this.scores.lion;
+            }
+
+            log(msg) {
+                const log = document.getElementById('game-log');
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                entry.textContent = msg;
+                log.prepend(entry);
+            }
+
+            takeMatches(count) {
+                if (this.isGameOver) return;
+
+                const board = document.getElementById('board');
+                const matches = board.querySelectorAll('.match:not(.taken)');
+
+                // Animate removal
+                let removed = 0;
+                for (let i = matches.length - 1; i >= 0; i--) {
+                    if (removed < count) {
+                        matches[i].classList.add('taken');
+                        removed++;
+                    } else {
+                        break;
+                    }
+                }
+
+                this.currentMatches -= count;
+                this.log(`${this.turn === 'dino' ? '🦖 你' : '🦁 小狮子'} 拿走了 ${count} 根火柴。`);
+
+                // Check Win
+                if (this.currentMatches <= 0) {
+                    this.matchOver(this.turn);
+                    return;
+                }
+
+                // Switch turn
+                this.turn = this.turn === 'dino' ? 'lion' : 'dino';
+                this.updateUI();
+
+                if (this.turn === 'lion') {
+                    setTimeout(() => this.aiTurn(), 1000);
+                }
+            }
+
+            playerVerify(count) {
+                if (this.turn !== 'dino') return;
+                if (count > this.currentMatches) return;
+                this.takeMatches(count);
+            }
+
+            aiTurn() {
+                if (this.isGameOver) return;
+
+                // STRATEGY: Modulo Algorithm
+                // Target: Leave opponent with a multiple of (MaxTake + 1)
+                // My Move = Current % (MaxTake + 1)
+
+                const magicNumber = this.maxTake + 1;
+                let optimalMove = this.currentMatches % magicNumber;
+
+                // If optimalMove is 0, we are in a "Losing Position".
+                // Take random (1 to maxTake) but valid
+                if (optimalMove === 0) {
+                    let limit = Math.min(this.maxTake, this.currentMatches);
+                    optimalMove = Math.floor(Math.random() * limit) + 1;
+                }
+
+                this.takeMatches(optimalMove);
+            }
+
+            matchOver(winner) {
+                this.isGameOver = true;
+                this.scores[winner]++;
+                this.updateUI();
+
+                // Show Modal
+                const modal = document.getElementById('game-over-modal');
+                const emoji = document.getElementById('winner-emoji');
+                const text = document.getElementById('winner-text');
+
+                if (winner === 'dino') {
+                    emoji.textContent = '🏆';
+                    text.textContent = '你赢了！';
+                    text.style.color = '#2a9d8f';
+                } else {
+                    emoji.textContent = '🦁';
+                    text.textContent = '小狮子赢了！';
+                    text.style.color = '#f4a261';
+                }
+
+                setTimeout(() => {
+                    modal.style.display = 'flex';
+                }, 500);
+            }
+        }
+
+        const game = new MatchGame();
+    </script>
+</body>
+
+</html>
